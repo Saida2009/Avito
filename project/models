@@ -1,0 +1,46 @@
+from pydantic import BaseModel, Field
+
+
+class User(BaseModel):
+    id: int
+    username: str
+    balance: float = Field(
+        default=0.0,
+        ge=0,
+        description="Баланс пользователя не может быть отрицательным",
+    )
+
+
+class Order(BaseModel):
+    id: int
+    order_title: str
+    price: float = Field(gt=0, description="Цена должна быть больше нуля")
+    seller_id: int
+    is_sold: bool = False
+
+
+class OrderRead(BaseModel):
+    id: int
+    order_title: str
+    price: float
+    seller_id: int
+    is_sold: bool
+
+
+class OrdersPage(BaseModel):
+    items: list[OrderRead]
+    total: int
+    limit: int
+    offset: int
+    has_next: bool
+
+
+class PurchaseRequest(BaseModel):
+    user_id: int = Field(gt=0, description="ID покупателя")
+    order_id: int = Field(gt=0, description="ID товара")
+
+
+class PurchaseResponse(BaseModel):
+    success: bool
+    message: str
+    remaining_balance: float
