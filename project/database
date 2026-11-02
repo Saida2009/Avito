@@ -1,0 +1,18 @@
+from models import Order, User
+
+users_db: dict[int, User] = {
+    1: User(id=1, username="Maxim", balance=500.0),
+    2: User(id=2, username="Alina", balance=0.0),
+}
+
+orders: list[Order] = [
+    Order(
+        id=i,
+        order_title=f"Заказ №{i}",
+        price=50.0 * (i % 5 + 1),
+        seller_id=(i % 2) + 1,
+    )
+    for i in range(1, 10_001)
+]
+
+user_purchases: dict[int, list[int]] = {1: []}
