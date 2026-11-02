@@ -1,0 +1,83 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from database import orders, user_purchases, users_db
+from models import PurchaseRequest, PurchaseResponse
+
+router = APIRouter(
+    prefix="/purchases",
+    tags=["Purchases"],
+)
+
+
+def get_user(user_id: int):
+    user = users_db.get(user_id)
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Покупатель не найден",
+        )
+
+    return user
+
+
+def get_order(order_id: int):
+    order = next(
+        (order for order in orders if order.id == order_id),
+        None,
+    )
+
+    if order is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Товар не найден",
+        )
+
+    return order
+
+
+@router.post("", response_model=PurchaseResponse)
+def make_purchase(
+    purchase: PurchaseRequest,
+    buyer=Depends(lambda: None),
+) -> PurchaseResponse:
+    buyer = get_user(purchase.user_id)
+    order = get_order(purchase.order_id)
+
+    if order.is_sold:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Товар уже продан",
+        )
+
+    seller = users_db.get(order.seller_id)
+
+    if seller is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Продавец не найден",
+        )
+
+    if buyer.id == seller.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Нельзя купить свой собственный товар",
+        )
+
+    if buyer.balance < order.price:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Недостаточно средств на балансе",
+        )
+
+    buyer.balance -= order.price
+    seller.balance += order.price
+    order.is_sold = True
+
+    user_purchases.setdefault(buyer.id, []).append(order.id)
+
+    return PurchaseResponse(
+        success=True,
+        message=f"Товар «{order.order_title}» успешно куплен!",
+        remaining_balance=buyer.balance,
+    )
