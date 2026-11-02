@@ -1,0 +1,4 @@
+from routers.orders import router as orders_router
+from routers.purchases import router as purchases_router
+
+__all__ = ["orders_router", "purchases_router"]
