@@ -1,0 +1,36 @@
+from fastapi import APIRouter, Query
+
+from database import orders
+from models import OrderRead, OrdersPage
+
+router = APIRouter(
+    prefix="/orders",
+    tags=["Orders"],
+)
+
+
+@router.get("", response_model=OrdersPage)
+def get_orders(
+    title: str | None = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> OrdersPage:
+    if title is not None:
+        filtered_orders = [
+            order
+            for order in orders
+            if order.order_title == title
+        ]
+    else:
+        filtered_orders = orders
+
+    total = len(filtered_orders)
+    items = filtered_orders[offset:offset + limit]
+
+    return OrdersPage(
+        items=[OrderRead.model_validate(order) for order in items],
+        total=total,
+        limit=limit,
+        offset=offset,
+        has_next=offset + len(items) < total,
+    )
