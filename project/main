@@ -1,0 +1,17 @@
+from fastapi import FastAPI
+
+from config import APP_TITLE, APP_VERSION
+from routers import orders_router, purchases_router
+
+app = FastAPI(
+    title=APP_TITLE,
+    version=APP_VERSION,
+)
+
+app.include_router(orders_router)
+app.include_router(purchases_router)
+
+
+@app.get("/", tags=["Health"])
+def health() -> dict[str, str]:
+    return {"status": "ok"}
